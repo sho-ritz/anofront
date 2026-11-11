@@ -17,12 +17,11 @@ export const CANDIDATE_SERVERS = [
   'https://nostr.download',
   'https://files.sovbit.host',
 ]
-/** Checked 2026-11-12 with a kind 15128 event; nostr.wine needs sign-up, user.kindpag.es only takes lists. */
+/** Checked 2026-11-12 with a kind 15128 event; nostr.wine needs sign-up, offchain.pub a web of trust, user.kindpag.es only takes lists. */
 export const CANDIDATE_RELAYS = [
   'wss://relay.nsite.lol',
   'wss://relay.primal.net',
   'wss://relay.snort.social',
-  'wss://offchain.pub',
   'wss://relay.nostr.net',
   'wss://nos.lol',
   'wss://relay.damus.io',
