@@ -1,0 +1,55 @@
+{
+  "name": "@anofront/cli",
+  "version": "0.1.0",
+  "description": "Deploy a static frontend to Nostr (nsite / NIP-5A) with no server to run. Works without a custom domain.",
+  "type": "module",
+  "license": "MIT",
+  "author": "show-ritz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sho-ritz/anofront.git"
+  },
+  "keywords": [
+    "nostr",
+    "nsite",
+    "blossom",
+    "static-site",
+    "deploy",
+    "serverless",
+    "anodb"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "anofront": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "nostr-tools": "^2.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/ws": "^8.18.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0",
+    "ws": "^8.22.2"
+  }
+}
