@@ -97,6 +97,8 @@ export interface MockGateway {
   origin: string
   /** Replace a path's bytes (simulates a malicious gateway). */
   tamper: Map<string, string>
+  /** Content-Type to send instead of the stored one (simulates a gateway that gets it wrong). */
+  forceType?: string
   /** Serve this manifest instead of the newest (simulates cache). */
   pinned?: Event
   close: () => Promise<void>
@@ -121,7 +123,7 @@ export async function mockGateway(relay: MockRelay, servers: MockBlossom[]): Pro
     if (g.tamper.has(p)) return res.writeHead(200, { 'content-type': 'text/html' }).end(g.tamper.get(p))
     const blob = servers.map((s) => s.blobs.get(sha!)).find(Boolean)
     if (!blob) return res.writeHead(502).end()
-    res.writeHead(status, { 'content-type': blob.type }).end(blob.data)
+    res.writeHead(status, { 'content-type': g.forceType ?? blob.type }).end(blob.data)
   })
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
   g.origin = `http://127.0.0.1:${port(server)}`

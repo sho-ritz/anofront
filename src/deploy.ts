@@ -120,8 +120,10 @@ export async function deploy(cwd: string, cfg: Config, key: SiteKey, env: Env = 
   const createdAt = Math.max(now, (current?.created_at ?? 0) + 1)
   const paths = filesToPaths(files)
   const site = finalizeEvent(rootSite(paths, good, { title: cfg.title, description: cfg.description }, createdAt), key.sk)
-  const siteAcks = ok(await publish(relays, site))
+  const siteResults = await publish(relays, site)
+  const siteAcks = ok(siteResults)
   log(`manifest accepted by ${siteAcks.length}/${relays.length} relays`)
+  for (const r of siteResults) if (!r.ok) log(`  ✗ ${r.relay}: ${r.message}`)
   if (siteAcks.length < MIN_RELAYS)
     throw new DeployError(`manifest accepted by only ${siteAcks.length} relay(s); need ${MIN_RELAYS}. The previous version stays live where it was not replaced.`)
 

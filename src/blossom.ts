@@ -1,6 +1,6 @@
 import { finalizeEvent } from 'nostr-tools'
 import type { SiteFile } from './files.js'
-import { contentTypeOk, mapLimit, normalizeServer } from './util.js'
+import { mapLimit, normalizeServer } from './util.js'
 
 export type Fetch = typeof fetch
 
@@ -16,7 +16,7 @@ export function authHeader(sk: Uint8Array, server: string, t: 'upload' | 'delete
     },
     sk,
   )
-  return `Nostr ${Buffer.from(JSON.stringify(ev)).toString('base64url')}`
+  return `Nostr ${Buffer.from(JSON.stringify(ev)).toString('base64')}`
 }
 
 export interface ServerResult {
@@ -28,8 +28,9 @@ export interface ServerResult {
 }
 
 /**
- * Makes sure every blob is on `server` and served back with a usable Content-Type. A server
- * passes only if all of them are; any failure rejects the whole server.
+ * Makes sure every blob is on `server` and retrievable. A server passes only if all of them are;
+ * any failure rejects the whole server. Content-Type is not checked here: gateways derive it from
+ * the path (nsite-gateway does), and `verify` checks what the gateway actually serves.
  */
 export async function syncServer(server: string, blobs: SiteFile[], sk: Uint8Array, f: Fetch = fetch): Promise<ServerResult> {
   const base = normalizeServer(server)
@@ -38,7 +39,7 @@ export async function syncServer(server: string, blobs: SiteFile[], sk: Uint8Arr
   try {
     await mapLimit(blobs, 4, async (b) => {
       const head = await f(`${base}/${b.sha256}`, { method: 'HEAD' })
-      if (head.ok && contentTypeOk(b.path, head.headers.get('content-type'))) {
+      if (head.ok) {
         skipped++
         return
       }
@@ -60,8 +61,6 @@ export async function syncServer(server: string, blobs: SiteFile[], sk: Uint8Arr
       if (desc.sha256 && desc.sha256 !== b.sha256) throw new Error(`upload ${b.path}: server stored a different hash`)
       const check = await f(`${base}/${b.sha256}`, { method: 'HEAD' })
       if (!check.ok) throw new Error(`${b.path}: not retrievable after upload (HTTP ${check.status})`)
-      if (!contentTypeOk(b.path, check.headers.get('content-type')))
-        throw new Error(`${b.path}: served as "${check.headers.get('content-type')}", expected ${b.type}`)
       uploaded++
     })
     return { server: base, ok: true, uploaded, skipped }

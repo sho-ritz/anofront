@@ -4,18 +4,29 @@ import { join } from 'node:path'
 export const CONFIG_FILE = 'anofront.json'
 
 /**
- * Candidate lists shipped with the tool. Nothing here is trusted: Blossom servers are used only
- * after they accept the upload and serve each file back with the right Content-Type, and relays
- * only count once they acknowledge the event. Checked 2026-11-11.
+ * Candidate lists shipped with the tool. Nothing here is trusted: a Blossom server is used only
+ * after it accepts and serves back every file, and a relay only counts once it acknowledges the
+ * event. Checked 2026-11-12 by uploading HTML / JS / CSS / WASM / text with a throwaway key;
+ * left out: cdn.hzrd149.com and blossom.f7z.io (allow-lists), cdn.nostrcheck.me (rejects HTML),
+ * blossom.band and blossom.nostr.build (reject CSS), cdn.satellite.earth (paid), cdn.sovbit.host (down).
  */
 export const CANDIDATE_SERVERS = [
   'https://blossom.primal.net',
-  'https://cdn.hzrd149.com',
+  'https://blossom.yakihonne.com',
+  'https://blossom.ditto.pub',
   'https://nostr.download',
-  'https://cdn.sovbit.host',
-  'https://cdn.nostrcheck.me',
+  'https://files.sovbit.host',
 ]
-export const CANDIDATE_RELAYS = ['wss://relay.nsite.lol', 'wss://nos.lol', 'wss://relay.primal.net', 'wss://relay.damus.io']
+/** Checked 2026-11-12 with a kind 15128 event; nostr.wine needs sign-up, user.kindpag.es only takes lists. */
+export const CANDIDATE_RELAYS = [
+  'wss://relay.nsite.lol',
+  'wss://relay.primal.net',
+  'wss://relay.snort.social',
+  'wss://offchain.pub',
+  'wss://relay.nostr.net',
+  'wss://nos.lol',
+  'wss://relay.damus.io',
+]
 /** Where gateways look up a pubkey's relay list (10002) and server list (10063). */
 export const LOOKUP_RELAYS = ['wss://purplepag.es', 'wss://user.kindpag.es']
 /**
@@ -24,7 +35,11 @@ export const LOOKUP_RELAYS = ['wss://purplepag.es', 'wss://user.kindpag.es']
  * year as immutable, so returning visitors would not see updates.
  */
 export const DEFAULT_GATEWAY = 'nsite.lol'
-export const DEFAULT_MIRRORS = ['nsite.run', 'nsite.cloud']
+/**
+ * nsite.run is not a default mirror: on 2026-11-12 its CDN returned another site's HTML for our
+ * /favicon.ico (cached across subdomains). Add it to "mirrors" yourself to monitor it.
+ */
+export const DEFAULT_MIRRORS = ['nsite.cloud']
 
 export interface Config {
   /** The site's public key (npub). The secret key is never stored in the project. */

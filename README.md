@@ -26,15 +26,15 @@ Each step runs only if the one before it worked:
 
 1. **Build** with the detected command (`npm run build`, …). Skip it with `--no-build`.
 2. **Upload** every file to Blossom servers until 3 of them hold all of it (at least 2 are
-   required). A server counts only if it serves each file back with the right `Content-Type`.
-   Some servers serve HTML as `text/plain`, which would make the gateway send a download.
-   Files that are already there are not uploaded again.
+   required). A server counts only if it accepts every file and serves it back. Files that are
+   already there are not uploaded again.
 3. **Publish** the manifest (kind 15128). At least 3 relays must accept it.
 4. **Publish** the relay list (10002) and server list (10063), also to the lookup relays that
    gateways use to find your site.
 5. **Snapshot** this version (kind 5128) so you can roll back.
 6. **Verify** by fetching every path from the canonical gateway and the mirrors, then comparing
-   each hash with what you signed.
+   each hash with what you signed. HTML, JS, CSS and WASM must also arrive with a usable
+   `Content-Type`.
 
 ## SPA routing
 
@@ -51,7 +51,7 @@ have the same hash, so they cost no extra upload.
   "dir": "dist",                // build output
   "build": "npm run build",     // "" to disable
   "gateway": "nsite.lol",       // canonical URL: https://<npub>.nsite.lol/
-  "mirrors": ["nsite.run", "nsite.cloud"],
+  "mirrors": ["nsite.cloud"],
   "routes": ["/chat", "/settings"],
   "spa": "auto",                // true | false | "auto" (single HTML file)
   "exclude": ["*.map"],
@@ -140,5 +140,8 @@ only routes traffic: the gateway must also issue a TLS certificate for your doma
 
 ## Status
 
-v0.1, tested against mock relays, Blossom servers and gateways. Not yet run against the public
-network. MIT.
+v0.1. Tested against mock relays, Blossom servers and gateways, and on the public network: the
+[anoDB family list](https://github.com/sho-ritz/anodb-family-list) sample (Next.js static
+export, 48 paths) is live at
+https://npub1x7v05wsxe8g6wj657y28nqs04x2grdtru6vcawhdd5tzr79dg3pqswk3qg.nsite.lol/, and a
+two-browser end-to-end test (invite, approve, sync, roles) passes there. MIT.

@@ -10,7 +10,7 @@ Agreed 2026-11-11 while reviewing the deployment policy ("Nostr site hosting: fr
 | 4 | The key is stored outside the project: `~/.config/anofront/keys/<npub>.nsec` (0600, folder 0700). CI uses `ANOFRONT_NSEC`. | The OS keychain was the first choice, but macOS `security` cannot take the secret from stdin non-interactively, and putting it on argv would expose it to other processes. A config file that contains an nsec is refused. |
 | 5 | A backup is mandatory at generation: show the nsec once, then require its last 8 characters | Losing the key means the URL can never be updated again, and anoDB users would have to move to a new origin and pair again. |
 | 6 | SPA: `index.html` → `/404.html` when the build has a single HTML file, plus `routes` copies | NIP-5A has no SPA fallback. The copies share a hash, so no extra upload. |
-| 7 | Candidate servers and relays are measured, not trusted: ≥2 Blossom servers (stop at 3) that return the right Content-Type, and ≥3 relay acks | Server policies change. A real server (nostr.download) served HTML as `text/plain`, which gateways forward and which breaks the page. |
+| 7 | Candidate servers and relays are measured, not trusted: ≥2 Blossom servers (stop at 3) that accept and serve back every file, and ≥3 relay acks. Content-Type is checked on the **gateway** response, not on Blossom | Server policies change. We first required the right Content-Type from Blossom too, but nsite-gateway sets it from the path, and Blossom servers (primal included) store JS as `text/plain`. With that check no server passed. |
 | 8 | Steps are gated in order: blobs → manifest → 10002/10063 (also to the lookup relays) → snapshot → verify | Never point a manifest at files that are not there. Gateways find sites through the lookup relays. |
 | 9 | Integrity: verify through the canonical gateway and the mirrors after every deploy, offer `verify` for cron monitoring, and document that the gateway is trusted for code | A plain browser cannot verify the gateway's first response. A Service Worker check can be defeated by a malicious gateway, so we don't pretend it protects. Bytes that match no published version are reported as possible tampering, and older versions as cache staleness. |
 | 10 | One canonical gateway (default nsite.lol) plus mirrors. `<meta name="anofront:canonical">` is injected into HTML | Each gateway is a separate origin, and anoDB data lives per origin. nsite.cloud caches `/` for a year as immutable, so it is not used as canonical. |
@@ -26,8 +26,24 @@ Agreed 2026-11-11 while reviewing the deployment policy ("Nostr site hosting: fr
   10002 and 10063, and serves `/404.html` (status 404) for unknown paths.
 - base36 is the 32-byte big-endian integer, `0-9a-z`, left-padded to 50 characters.
 
-## Open
+## First public deploy (2026-11-12, anodb-family-list)
 
-- Run against the public network (needs a real deploy).
+- Blossom: blossom.primal.net, blossom.yakihonne.com and blossom.ditto.pub accepted all 44 files.
+  Rejected: cdn.hzrd149.com and blossom.f7z.io (allow-list), cdn.nostrcheck.me (no HTML or
+  `.txt`), blossom.band and blossom.nostr.build (CSS "does not match content"),
+  cdn.satellite.earth (paid), cdn.sovbit.host (down).
+- primal rejected base64url in the `Authorization: Nostr` header ("invalid base64"). Standard
+  base64 works everywhere we tried.
+- Relays: 5 of 7 accepted the manifest (relay.nsite.lol, relay.primal.net, relay.snort.social,
+  offchain.pub, relay.nostr.net). nos.lol never answered OK, and relay.damus.io would not connect
+  from here.
+- Gateways: nsite.lol and nsite.cloud served all 48 paths with matching hashes. **nsite.run
+  returned another site's HTML for `/favicon.ico`**: its CDN caches across subdomains. `verify`
+  reported it as "matches no published version", so it is no longer a default mirror. This is
+  exactly the failure class verification exists for.
+- The app worked end to end from the gateway: sql.js WASM from `/anodb/`, IndexedDB, invite
+  links, sync and roles.
+
+## Open
 - anoDB: read `anofront:canonical` and warn when running on a non-canonical origin.
 - `anodb deploy` → anofront.

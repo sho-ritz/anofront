@@ -32,7 +32,7 @@ beforeEach(async () => {
   relays = await Promise.all([mockRelay(), mockRelay(), mockRelay(), mockRelay()])
   lookup = await mockRelay()
   plain = await mockBlossom()
-  plain.forceType = 'text/plain' // like a server that serves HTML as text: must be skipped
+  plain.rejectUploads = true // like a server with an allow-list: must be skipped
   servers = await Promise.all([mockBlossom(), mockBlossom(), mockBlossom()])
   gw = await mockGateway(relays[0]!, servers)
   mirror = await mockGateway(relays[1]!, servers)
@@ -63,11 +63,11 @@ afterEach(async () => {
 })
 
 describe('deploy', () => {
-  it('uploads, publishes and verifies; skips servers with wrong Content-Type', async () => {
+  it('uploads, publishes and verifies; skips servers that refuse uploads', async () => {
     const res = await deploy(cwd, cfg, key, env)
     expect(res.url).toBe(`https://${key.npub}.canonical.test/`)
     expect(res.servers[0]).toMatchObject({ server: plain.url, ok: false })
-    expect(res.servers[0]!.error).toMatch(/served as "text\/plain"/)
+    expect(res.servers[0]!.error).toMatch(/HTTP 401/)
     expect(res.servers.filter((s) => s.ok).map((s) => s.server)).toEqual(servers.map((s) => s.url))
     expect(res.relays).toHaveLength(4)
     expect(res.reports.map((r) => r.status)).toEqual(['ok', 'ok'])
@@ -104,6 +104,13 @@ describe('deploy', () => {
     await writeSite('console.log("v3")')
     const third = await deploy(cwd, cfg, key, env)
     expect(third.reports[0]).toMatchObject({ status: 'failed', unknown: ['/assets/app.js'] })
+  })
+
+  it('flags a gateway that serves scripts or WASM with the wrong Content-Type', async () => {
+    mirror.forceType = 'text/plain'
+    const res = await deploy(cwd, cfg, key, env)
+    expect(res.reports[0]!.status).toBe('ok')
+    expect(res.reports[1]).toMatchObject({ status: 'failed', badType: ['/404.html', '/assets/app.js', '/assets/sql-wasm.wasm', '/chat/index.html', '/index.html'] })
   })
 
   it('publishes nothing when fewer than 2 servers accept every file', async () => {
